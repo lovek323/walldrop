@@ -33,7 +33,8 @@ class WalldropService
         string $uncheckedPath,
         string $checkedPath,
         string $unwantedPath
-    ) {
+    )
+    {
         $this->wallhaven = $wallhaven;
         $this->uncheckedPath = $uncheckedPath;
         $this->checkedPath = $checkedPath;
@@ -74,9 +75,10 @@ class WalldropService
             if ($wallpaper->getPurity() !== Purity::SFW) {
                 continue;
             }
-            switch ($wallpaper->getResolution()) {
-                default:
-                    throw new Exception('Unrecognised resolution: ' . $wallpaper->getResolution());
+            $resolutionParts = array_map('intval', explode('x', $wallpaper->getResolution()));
+            $ratio = round($resolutionParts[0] / $resolutionParts[1], 2);
+            if ($ratio < 1) {
+                continue;
             }
             if ($this->exists($wallpaper, $sourceHierarchy)) {
                 continue;
@@ -88,6 +90,28 @@ class WalldropService
     }
 
     /**
+     * @param Wallpaper $wallpaper The wallpaper to search for.
+     * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki'])).
+     * @return bool True if the file exists in any valid directory. False otherwise.
+     */
+    private function exists(Wallpaper $wallpaper, array $sourceHierarchy): bool
+    {
+        $paths = [
+            $this->getUncheckedPath($wallpaper, $sourceHierarchy),
+            $this->getCheckedPath($wallpaper, $sourceHierarchy),
+            $this->getUnwantedPath($wallpaper, $sourceHierarchy),
+        ];
+
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param Wallpaper $wallpaper The wallpaper to find the path for.
      * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki']).
      * @return string The fully qualified unchecked path for the destination file.
@@ -95,16 +119,6 @@ class WalldropService
     private function getUncheckedPath(Wallpaper $wallpaper, array $sourceHierarchy): string
     {
         return $this->getPath($wallpaper, $this->uncheckedPath, $sourceHierarchy);
-    }
-
-    /**
-     * @param Wallpaper $wallpaper The wallpaper to find the path for.
-     * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki']).
-     * @return string The fully qualified unwanted path for the destination file.
-     */
-    private function getUnwantedPath(Wallpaper $wallpaper, array $sourceHierarchy): string
-    {
-        return $this->getPath($wallpaper, $this->unwantedPath, $sourceHierarchy);
     }
 
     /**
@@ -136,28 +150,6 @@ class WalldropService
     }
 
     /**
-     * @param Wallpaper $wallpaper The wallpaper to search for.
-     * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki'])).
-     * @return bool True if the file exists in any valid directory. False otherwise.
-     */
-    private function exists(Wallpaper $wallpaper, array $sourceHierarchy): bool
-    {
-        $paths = [
-            $this->getUncheckedPath($wallpaper, $sourceHierarchy),
-            $this->getCheckedPath($wallpaper, $sourceHierarchy),
-            $this->getUnwantedPath($wallpaper, $sourceHierarchy),
-        ];
-
-        foreach ($paths as $path) {
-            if (is_file($path)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * @param Wallpaper $wallpaper The wallpaper to find the path for.
      * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki']).
      * @return string The fully qualified unchecked path for the destination file.
@@ -165,5 +157,15 @@ class WalldropService
     private function getCheckedPath(Wallpaper $wallpaper, array $sourceHierarchy): string
     {
         return $this->getPath($wallpaper, $this->checkedPath, $sourceHierarchy);
+    }
+
+    /**
+     * @param Wallpaper $wallpaper The wallpaper to find the path for.
+     * @param array $sourceHierarchy The source hierarchy (e.g., ['tag', 'Youjo Senki']).
+     * @return string The fully qualified unwanted path for the destination file.
+     */
+    private function getUnwantedPath(Wallpaper $wallpaper, array $sourceHierarchy): string
+    {
+        return $this->getPath($wallpaper, $this->unwantedPath, $sourceHierarchy);
     }
 }
