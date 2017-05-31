@@ -1,0 +1,15 @@
+#!/usr/bin/php
+<?php
+
+require_once(__DIR__ . '/../vendor/autoload.php');
+require_once(__DIR__ . '/../config/services.php');
+
+/** @var \Pimple\Container $container */
+
+$service = new Oconal\Walldrop\WalldropService(
+    $container[\Oconal\Walldrop\Wallhaven::class],
+    $container['ENV_UNCHECKED_PATH'],
+    $container['ENV_CHECKED_PATH'],
+    $container['ENV_UNWANTED_PATH']
+);
+$service->sync();
